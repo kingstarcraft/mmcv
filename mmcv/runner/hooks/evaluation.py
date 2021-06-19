@@ -63,6 +63,7 @@ class EvalHook(Hook):
 
     def __init__(self,
                  dataloader,
+                 model=None,
                  start=None,
                  interval=1,
                  by_epoch=True,
@@ -84,6 +85,7 @@ class EvalHook(Hook):
                              f'than 0')
 
         self.dataloader = dataloader
+        self.model = model
         self.interval = interval
         self.start = start
         self.by_epoch = by_epoch
@@ -182,7 +184,8 @@ class EvalHook(Hook):
             return
 
         from mmcv.engine import single_gpu_test
-        results = single_gpu_test(runner.model, self.dataloader)
+        model = runner.model if self.model is None else self.model(runner.model)
+        results = single_gpu_test(model, self.dataloader)
         runner.log_buffer.output['eval_iter_num'] = len(self.dataloader)
         key_score = self.evaluate(runner, results)
         if self.save_best:
@@ -324,6 +327,7 @@ class DistEvalHook(EvalHook):
 
     def __init__(self,
                  dataloader,
+                 model=None,
                  start=None,
                  interval=1,
                  by_epoch=True,
@@ -335,6 +339,7 @@ class DistEvalHook(EvalHook):
                  **eval_kwargs):
         super().__init__(
             dataloader,
+            model,
             start=start,
             interval=interval,
             by_epoch=by_epoch,
@@ -368,8 +373,9 @@ class DistEvalHook(EvalHook):
             tmpdir = osp.join(runner.work_dir, '.eval_hook')
 
         from mmcv.engine import multi_gpu_test
+        model = runner.model if self.model is None else self.model(runner.model)
         results = multi_gpu_test(
-            runner.model,
+            model,
             self.dataloader,
             tmpdir=tmpdir,
             gpu_collect=self.gpu_collect)
