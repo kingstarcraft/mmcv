@@ -279,6 +279,7 @@ class Config:
         with tempfile.NamedTemporaryFile('w', suffix=file_format) as temp_file:
             temp_file.write(cfg_str)
             temp_file.flush()
+            temp_file.close()
             cfg = Config.fromfile(temp_file.name)
         return cfg
 
