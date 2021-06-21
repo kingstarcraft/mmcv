@@ -159,6 +159,7 @@ class EpochBasedRunner(BaseRunner):
             raise TypeError(
                 f'meta should be a dict or None, but got {type(meta)}')
         if self.meta is not None:
+            self.meta.update(epoch=self.epoch + 1, iter=self.iter)
             meta.update(self.meta)
 
         filename = filename_tmpl.format(self.epoch + 1)
