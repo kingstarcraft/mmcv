@@ -45,13 +45,14 @@ class EpochBasedRunner(BaseRunner):
         self._max_iters = self._max_epochs * len(self.data_loader)
         self.call_hook('before_train_epoch')
         time.sleep(2)  # Prevent possible deadlock during epoch transition
-        with tqdm.tqdm(self.data_loader, desc='train') as progress:
-            for i, data_batch in enumerate(progress):
-                self._inner_iter = i
-                self.call_hook('before_train_iter')
-                self.run_iter(data_batch, train_mode=True, **kwargs)
-                self.call_hook('after_train_iter')
-                self._iter += 1
+        progress = mmcv.ProgressBar(len(self.data_loader))
+        for i, data_batch in enumerate(self.data_loader):
+            progress.update()
+            self._inner_iter = i
+            self.call_hook('before_train_iter')
+            self.run_iter(data_batch, train_mode=True, **kwargs)
+            self.call_hook('after_train_iter')
+            self._iter += 1
 
         self.call_hook('after_train_epoch')
         self._epoch += 1
@@ -63,12 +64,13 @@ class EpochBasedRunner(BaseRunner):
         self.data_loader = data_loader
         self.call_hook('before_val_epoch')
         time.sleep(2)  # Prevent possible deadlock during epoch transition
-        with tqdm.tqdm(self.data_loader, desc='validation') as progress:
-            for i, data_batch in enumerate(progress):
-                self._inner_iter = i
-                self.call_hook('before_val_iter')
-                self.run_iter(data_batch, train_mode=False)
-                self.call_hook('after_val_iter')
+        progress = mmcv.ProgressBar(len(self.data_loader))
+        for i, data_batch in enumerate(self.data_loader):
+            progress.update()
+            self._inner_iter = i
+            self.call_hook('before_val_iter')
+            self.run_iter(data_batch, train_mode=False)
+            self.call_hook('after_val_iter')
 
         self.call_hook('after_val_epoch')
 

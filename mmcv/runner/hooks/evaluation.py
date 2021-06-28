@@ -274,6 +274,8 @@ class EvalHook(Hook):
         related information (best score, best checkpoint path) and save the
         best checkpoint into ``work_dir``.
         """
+        if key_score is None:
+            return
         if self.by_epoch:
             current = f'epoch_{runner.epoch + 1}'
             cur_type, cur_time = 'epoch', runner.epoch + 1
@@ -315,7 +317,7 @@ class EvalHook(Hook):
             runner.log_buffer.output[name] = val
         runner.log_buffer.ready = True
 
-        if self.save_best is not None:
+        if self.save_best is not None and len(eval_res) > 0:
             if self.key_indicator == 'auto':
                 # infer from eval_results
                 self._init_rule(self.rule, list(eval_res.keys())[0])
