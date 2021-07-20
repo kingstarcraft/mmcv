@@ -156,15 +156,18 @@ class EpochBasedRunner(BaseRunner):
                 Defaults to True.
         """
         if meta is None:
-            meta = dict(epoch=self.epoch + 1, iter=self.iter)
-        elif isinstance(meta, dict):
-            meta.update(epoch=self.epoch + 1, iter=self.iter)
-        else:
+            meta = {}
+        elif not isinstance(meta, dict):
             raise TypeError(
                 f'meta should be a dict or None, but got {type(meta)}')
         if self.meta is not None:
             self.meta.update(epoch=self.epoch + 1, iter=self.iter)
             meta.update(self.meta)
+            # Note: meta.update(self.meta) should be done before
+            # meta.update(epoch=self.epoch + 1, iter=self.iter) otherwise
+            # there will be problems with resumed checkpoints.
+            # More details in https://github.com/open-mmlab/mmcv/pull/1108
+        meta.update(epoch=self.epoch + 1, iter=self.iter)
 
         filename = filename_tmpl.format(self.epoch + 1)
         filepath = osp.join(out_dir, filename)
