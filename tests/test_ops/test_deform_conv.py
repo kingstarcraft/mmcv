@@ -1,10 +1,8 @@
-from distutils.version import LooseVersion
-
 import numpy as np
 import pytest
 import torch
 
-from mmcv.utils import TORCH_VERSION
+from mmcv.utils import TORCH_VERSION, digit_version
 
 try:
     # If PyTorch version >= 1.6.0 and fp16 is enabled, torch.cuda.amp.autocast
@@ -38,13 +36,16 @@ gt_deform_weight_grad = [[[[3.62, 0.], [0.40, 0.18]]]]
 
 class TestDeformconv(object):
 
-    def _test_deformconv(self, dtype=torch.float, threshold=1e-3):
-        if not torch.cuda.is_available():
-            return
+    def _test_deformconv(self,
+                         dtype=torch.float,
+                         threshold=1e-3,
+                         device='cuda'):
+        if not torch.cuda.is_available() and device == 'cuda':
+            pytest.skip('test requires GPU')
         from mmcv.ops import DeformConv2dPack
         c_in = 1
         c_out = 1
-        x = torch.Tensor(input).cuda().type(dtype)
+        x = torch.tensor(input, device=device, dtype=dtype)
         x.requires_grad = True
         model = DeformConv2dPack(c_in, c_out, 2, stride=1, padding=0)
         model.conv_offset.weight.data = torch.nn.Parameter(
@@ -53,7 +54,9 @@ class TestDeformconv(object):
             torch.Tensor(offset_bias).reshape(8))
         model.weight.data = torch.nn.Parameter(
             torch.Tensor(deform_weight).reshape(1, 1, 2, 2))
-        model.cuda().type(dtype)
+        if device == 'cuda':
+            model.cuda()
+        model.type(dtype)
 
         out = model(x)
         out.backward(torch.ones_like(out))
@@ -69,6 +72,7 @@ class TestDeformconv(object):
                            gt_deform_weight_grad, threshold)
 
         from mmcv.ops import DeformConv2d
+
         # test bias
         model = DeformConv2d(1, 1, 2, stride=1, padding=0)
         assert not hasattr(model, 'bias')
@@ -123,6 +127,7 @@ class TestDeformconv(object):
                            gt_deform_weight_grad, threshold)
 
         from mmcv.ops import DeformConv2d
+
         # test bias
         model = DeformConv2d(1, 1, 2, stride=1, padding=0)
         assert not hasattr(model, 'bias')
@@ -137,14 +142,16 @@ class TestDeformconv(object):
             model = DeformConv2d(3, 4, 3, groups=3)
 
     def test_deformconv(self):
+        self._test_deformconv(torch.double, device='cpu')
+        self._test_deformconv(torch.float, device='cpu', threshold=1e-1)
         self._test_deformconv(torch.double)
         self._test_deformconv(torch.float)
-        self._test_deformconv(torch.half, 1e-1)
+        self._test_deformconv(torch.half, threshold=1e-1)
 
         # test amp when torch version >= '1.6.0', the type of
         # input data for deformconv might be torch.float or torch.half
         if (TORCH_VERSION != 'parrots'
-                and LooseVersion(TORCH_VERSION) >= LooseVersion('1.6.0')):
+                and digit_version(TORCH_VERSION) >= digit_version('1.6.0')):
             with autocast(enabled=True):
                 self._test_amp_deformconv(torch.float, 1e-1)
                 self._test_amp_deformconv(torch.half, 1e-1)
