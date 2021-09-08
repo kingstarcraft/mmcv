@@ -4,6 +4,7 @@ from collections import defaultdict
 from itertools import chain
 
 from torch.nn.utils import clip_grad
+from torch.optim import Optimizer
 
 from mmcv.utils import TORCH_VERSION, _BatchNorm, digit_version
 from ..dist_utils import allreduce_grads
@@ -31,15 +32,33 @@ class OptimizerHook(Hook):
             return clip_grad.clip_grad_norm_(params, **self.grad_clip)
 
     def after_train_iter(self, runner):
-        runner.optimizer.zero_grad()
-        runner.outputs['loss'].backward()
+        optimizer = runner.optimizer
+        loss = runner.outputs['loss']
+        parameter = runner.model.parameters()
+        if isinstance(optimizer, Optimizer):
+            self.update(optimizer, loss, parameter, runner)
+
+        if isinstance(optimizer, (tuple, list)) and \
+                isinstance(loss, (tuple, list)) and \
+                isinstance(parameter, (tuple, list)):
+            assert len(optimizer) == len(loss) == len(parameter)
+            keys = range(len(optimizer))
+        elif isinstance(optimizer, dict) and isinstance(loss, dict) and isinstance(parameter, dict):
+            assert optimizer.keys() == loss.keys() == parameter.keys()
+            keys = optimizer.keys()
+        for key in keys:
+            self.update(optimizer[key], loss[key], parameter[key], runner, key)
+
+    def update(self, optimizer, loss, parameter, runner, id=''):
+        optimizer.zero_grad()
+        loss.backward()
         if self.grad_clip is not None:
-            grad_norm = self.clip_grads(runner.model.parameters())
+            grad_norm = self.clip_grads(parameter)
             if grad_norm is not None:
                 # Add grad norm to the logger
-                runner.log_buffer.update({'grad_norm': float(grad_norm)},
+                runner.log_buffer.update({f'grad_norm_{id}': float(grad_norm)},
                                          runner.outputs['num_samples'])
-        runner.optimizer.step()
+        optimizer.step()
 
 
 @HOOKS.register_module()
@@ -102,7 +121,7 @@ class GradientCumulativeOptimizerHook(OptimizerHook):
 
         self.initialized = True
 
-    def after_train_iter(self, runner):
+    def update(self, optimizer, loss, parameter, runner, id=''):
         if not self.initialized:
             self._init(runner)
 
@@ -110,7 +129,7 @@ class GradientCumulativeOptimizerHook(OptimizerHook):
             loss_factor = self.cumulative_iters
         else:
             loss_factor = self.remainder_iters
-        loss = runner.outputs['loss']
+        # loss = runner.outputs['loss']
         loss = loss / loss_factor
         loss.backward()
 
@@ -118,13 +137,13 @@ class GradientCumulativeOptimizerHook(OptimizerHook):
                 or self.is_last_iter(runner)):
 
             if self.grad_clip is not None:
-                grad_norm = self.clip_grads(runner.model.parameters())
+                grad_norm = self.clip_grads(parameter)
                 if grad_norm is not None:
                     # Add grad norm to the logger
-                    runner.log_buffer.update({'grad_norm': float(grad_norm)},
+                    runner.log_buffer.update({f'grad_norm_{id}': float(grad_norm)},
                                              runner.outputs['num_samples'])
-            runner.optimizer.step()
-            runner.optimizer.zero_grad()
+            optimizer.step()
+            optimizer.zero_grad()
 
 
 if (TORCH_VERSION != 'parrots'

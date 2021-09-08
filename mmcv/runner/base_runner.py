@@ -391,6 +391,9 @@ class BaseRunner(metaclass=ABCMeta):
                 for k in self.optimizer.keys():
                     self.optimizer[k].load_state_dict(
                         checkpoint['optimizer'][k])
+            elif isinstance(self.optimizer, (tuple, list)):
+                for i in range(len(self.optimizer)):
+                    self.optimizer[i].load_state_dict(checkpoint['optimizer'][i])
             else:
                 raise TypeError(
                     'Optimizer should be dict or torch.optim.Optimizer '
