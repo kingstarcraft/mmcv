@@ -56,7 +56,12 @@ class MMDataParallel(DataParallel):
              ' train with multiple GPUs, please use MMDistributedDataParallel'
              'instead.')
 
-        for t in chain(self.module.parameters(), self.module.buffers()):
+        parameters = self.module.parameters()
+        if isinstance(parameters, dict):
+            parameters = parameters.values()
+        elif not isinstance(parameters, (tuple, list)):
+            parameters = [parameters]
+        for t in chain(*parameters, self.module.buffers()):
             if t.device != self.src_device_obj:
                 raise RuntimeError(
                     'module must have its parameters and buffers '

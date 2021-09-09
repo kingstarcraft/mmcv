@@ -239,19 +239,12 @@ class DefaultOptimizerConstructor:
         # if no paramwise option is specified, just use the global setting
         if not self.paramwise_cfg:
             parameters = model.parameters()
-            if isinstance(parameters, (tuple, list)):
-                optimizers = []
-                for params in parameters:
-                    optimizer_cfg['params'] = params
-                    optimizers.append(build_from_cfg(optimizer_cfg, OPTIMIZERS))
-                if isinstance(parameters, tuple):
-                    return tuple(parameters)
-                return optimizers
-            elif isinstance(parameters, dict):
+            if isinstance(parameters, dict):
                 optimizers = {}
                 for key in parameters:
                     optimizer_cfg['params'] = parameters[key]
                     optimizers[key] = build_from_cfg(optimizer_cfg, OPTIMIZERS)
+                return optimizers
             optimizer_cfg['params'] = model.parameters()
             return build_from_cfg(optimizer_cfg, OPTIMIZERS)
 

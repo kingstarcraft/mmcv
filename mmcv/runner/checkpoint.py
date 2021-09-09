@@ -643,10 +643,6 @@ def save_checkpoint(model, filename, optimizer=None, meta=None):
         checkpoint['optimizer'] = {}
         for name, optim in optimizer.items():
             checkpoint['optimizer'][name] = optim.state_dict()
-    elif isinstance(optimizer, tuple):
-        checkpoint['optimizer'] = tuple(optim.state_dict() for optim in optimizer)
-    elif isinstance(optimizer, list):
-        checkpoint['optimizer'] = list(optim.state_dict() for optim in optimizer)
 
     if filename.startswith('pavi://'):
         try:

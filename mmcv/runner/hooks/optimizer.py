@@ -34,29 +34,28 @@ class OptimizerHook(Hook):
     def after_train_iter(self, runner):
         optimizer = runner.optimizer
         loss = runner.outputs['loss']
-        parameter = runner.model.parameters()
+        if hasattr(runner.model, 'module'):
+            parameter = runner.model.module.parameters()
+        else:
+            parameter = runner.model.parameters()
         if isinstance(optimizer, Optimizer):
             self.update(optimizer, loss, parameter, runner)
-
-        if isinstance(optimizer, (tuple, list)) and \
-                isinstance(loss, (tuple, list)) and \
-                isinstance(parameter, (tuple, list)):
-            assert len(optimizer) == len(loss) == len(parameter)
-            keys = range(len(optimizer))
         elif isinstance(optimizer, dict) and isinstance(loss, dict) and isinstance(parameter, dict):
             assert optimizer.keys() == loss.keys() == parameter.keys()
-            keys = optimizer.keys()
-        for key in keys:
-            self.update(optimizer[key], loss[key], parameter[key], runner, key)
+            for key in optimizer.keys():
+                self.update(optimizer[key], loss[key], parameter[key], runner, key)
+        else:
+            raise NotImplementedError
 
-    def update(self, optimizer, loss, parameter, runner, id=''):
+    def update(self, optimizer, loss, parameter, runner, name=None):
         optimizer.zero_grad()
         loss.backward()
         if self.grad_clip is not None:
             grad_norm = self.clip_grads(parameter)
             if grad_norm is not None:
                 # Add grad norm to the logger
-                runner.log_buffer.update({f'grad_norm_{id}': float(grad_norm)},
+                key = 'grad_norm' if name is None else f'grad_norm({name})'
+                runner.log_buffer.update({key: float(grad_norm)},
                                          runner.outputs['num_samples'])
         optimizer.step()
 
@@ -121,7 +120,7 @@ class GradientCumulativeOptimizerHook(OptimizerHook):
 
         self.initialized = True
 
-    def update(self, optimizer, loss, parameter, runner, id=''):
+    def update(self, optimizer, loss, parameter, runner, name=None):
         if not self.initialized:
             self._init(runner)
 
@@ -140,7 +139,8 @@ class GradientCumulativeOptimizerHook(OptimizerHook):
                 grad_norm = self.clip_grads(parameter)
                 if grad_norm is not None:
                     # Add grad norm to the logger
-                    runner.log_buffer.update({f'grad_norm_{id}': float(grad_norm)},
+                    key = 'grad_norm' if name is None else f'grad_norm({name})'
+                    runner.log_buffer.update({key: float(grad_norm)},
                                              runner.outputs['num_samples'])
             optimizer.step()
             optimizer.zero_grad()
