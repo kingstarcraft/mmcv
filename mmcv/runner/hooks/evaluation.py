@@ -383,6 +383,8 @@ class EvalHook(Hook):
             if self.key_indicator == 'auto':
                 # infer from eval_results
                 self._init_rule(self.rule, list(eval_res.keys())[0])
+            if self.key_indicator not in eval_res:
+                return eval_res[self.key_indicator]
             return eval_res[self.key_indicator]
 
         return None
