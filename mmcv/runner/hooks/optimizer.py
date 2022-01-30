@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
+import logging
 from collections import defaultdict
 from itertools import chain
 
@@ -21,9 +22,27 @@ except ImportError:
 
 @HOOKS.register_module()
 class OptimizerHook(Hook):
+    """A hook contains custom operations for the optimizer.
 
-    def __init__(self, grad_clip=None):
+    Args:
+        grad_clip (dict, optional): A config dict to control the clip_grad.
+            Default: None.
+        detect_anomalous_params (bool): This option is only used for
+            debugging which will slow down the training speed.
+            Detect anomalous parameters that are not included in
+            the computational graph with `loss` as the root.
+            There are two cases
+
+                - Parameters were not used during
+                  forward pass.
+                - Parameters were not used to produce
+                  loss.
+            Default: False.
+    """
+
+    def __init__(self, grad_clip=None, detect_anomalous_params=False):
         self.grad_clip = grad_clip
+        self.detect_anomalous_params = detect_anomalous_params
 
     def clip_grads(self, params):
         params = list(
@@ -49,6 +68,8 @@ class OptimizerHook(Hook):
 
     def update(self, optimizer, loss, parameter, runner, name=None):
         optimizer.zero_grad()
+        if self.detect_anomalous_params:
+            self.detect_anomalous_parameters(loss, runner)
         loss.backward()
         if self.grad_clip is not None:
             grad_norm = self.clip_grads(parameter)
@@ -58,6 +79,32 @@ class OptimizerHook(Hook):
                 runner.log_buffer.update({key: float(grad_norm)},
                                          runner.outputs['num_samples'])
         optimizer.step()
+
+    def detect_anomalous_parameters(self, loss, runner):
+        logger = runner.logger
+        parameters_in_graph = set()
+        visited = set()
+
+        def traverse(grad_fn):
+            if grad_fn is None:
+                return
+            if grad_fn not in visited:
+                visited.add(grad_fn)
+                if hasattr(grad_fn, 'variable'):
+                    parameters_in_graph.add(grad_fn.variable)
+                parents = grad_fn.next_functions
+                if parents is not None:
+                    for parent in parents:
+                        grad_fn = parent[0]
+                        traverse(grad_fn)
+
+        traverse(loss.grad_fn)
+        for n, p in runner.model.named_parameters():
+            if p not in parameters_in_graph and p.requires_grad:
+                logger.log(
+                    level=logging.ERROR,
+                    msg=f'{n} with shape {p.size()} is not '
+                    f'in the computational graph \n')
 
 
 @HOOKS.register_module()
