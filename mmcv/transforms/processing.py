@@ -1456,7 +1456,7 @@ class RandomResize(BaseTransform):
 
     def __init__(
         self,
-        scale: Union[Tuple[int, int], Sequence[Tuple[int, int]]],
+        scale: Union[Tuple[int, int], Sequence[Tuple[int, int]]] = None,
         ratio_range: Tuple[float, float] = None,
         resize_type: str = 'Resize',
         **resize_kwargs,
@@ -1467,7 +1467,7 @@ class RandomResize(BaseTransform):
 
         self.resize_cfg = dict(type=resize_type, **resize_kwargs)
         # create a empty Reisize object
-        self.resize = TRANSFORMS.build({'scale': 0, **self.resize_cfg})
+        self.resize = TRANSFORMS.build({'scale': None, 'scale_factor': 1.0, **self.resize_cfg})
 
     @staticmethod
     def _random_sample(scales: Sequence[Tuple[int, int]]) -> tuple:
@@ -1531,6 +1531,10 @@ class RandomResize(BaseTransform):
                 self.ratio_range)
         elif mmengine.is_seq_of(self.scale, tuple):
             scale = self._random_sample(self.scale)  # type: ignore
+        elif self.scale is None:
+            assert self.ratio_range is not None
+            min_ratio, max_ratio = self.ratio_range
+            scale = np.random.random_sample() * (max_ratio - min_ratio) + min_ratio
         else:
             raise NotImplementedError('Do not support sampling function '
                                       f'for "{self.scale}"')
@@ -1549,8 +1553,11 @@ class RandomResize(BaseTransform):
             ``gt_keypoints``, ``scale``, ``scale_factor``, ``img_shape``, and
             ``keep_ratio`` keys are updated in result dict.
         """
-        results['scale'] = self._random_scale()
-        self.resize.scale = results['scale']
+        value = self._random_scale()
+        if self.scale is not None:
+            self.resize.scale = value
+        else:
+            self.resize.scale_factor = value
         results = self.resize(results)
         return results
 
