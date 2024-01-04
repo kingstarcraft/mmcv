@@ -8,7 +8,7 @@ from typing import Optional, Union
 import cv2
 import mmengine.fileio as fileio
 import numpy as np
-from cv2 import (IMREAD_COLOR, IMREAD_GRAYSCALE, IMREAD_IGNORE_ORIENTATION,
+from cv2 import (IMREAD_COLOR, IMREAD_GRAYSCALE, IMREAD_ANYDEPTH, IMREAD_IGNORE_ORIENTATION,
                  IMREAD_UNCHANGED)
 from mmengine.utils import is_filepath, is_str
 
@@ -33,6 +33,8 @@ supported_backends = ['cv2', 'turbojpeg', 'pillow', 'tifffile']
 imread_flags = {
     'color': IMREAD_COLOR,
     'grayscale': IMREAD_GRAYSCALE,
+    'anydepth': IMREAD_ANYDEPTH,
+    'color_anydepth': IMREAD_COLOR | IMREAD_ANYDEPTH,
     'unchanged': IMREAD_UNCHANGED,
     'color_ignore_orientation': IMREAD_IGNORE_ORIENTATION | IMREAD_COLOR,
     'grayscale_ignore_orientation':
