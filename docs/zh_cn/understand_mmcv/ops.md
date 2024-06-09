@@ -6,13 +6,13 @@ MMCV 提供了检测、分割等任务中常用的算子
 | ---------------------------- | --- | ---- | --- | --- | ------ |
 | ActiveRotatedFilter          | √   | √    |     |     | √      |
 | AssignScoreWithK             |     | √    |     |     |        |
-| BallQuery                    |     | √    | √   |     |        |
+| BallQuery                    |     | √    | √   |     | √      |
 | BBoxOverlaps                 |     | √    | √   | √   | √      |
 | BorderAlign                  |     | √    |     |     |        |
 | BoxIouRotated                | √   | √    | √   |     | √      |
 | BoxIouQuadri                 | √   | √    |     |     |        |
 | CARAFE                       |     | √    | √   |     |        |
-| ChamferDistance              |     | √    |     |     |        |
+| ChamferDistance              |     | √    |     |     | √      |
 | CrissCrossAttention          |     | √    |     |     |        |
 | ContourExpand                | √   |      |     |     |        |
 | ConvexIoU                    |     | √    |     |     |        |
@@ -22,8 +22,8 @@ MMCV 提供了检测、分割等任务中常用的算子
 | Deformable RoIPool           |     | √    | √   |     | √      |
 | DiffIoURotated               |     | √    | √   |     |        |
 | DynamicScatter               |     | √    | √   |     |        |
-| FurthestPointSample          |     | √    |     |     |        |
-| FurthestPointSampleWithDist  |     | √    |     |     |        |
+| FurthestPointSample          |     | √    |     |     | √      |
+| FurthestPointSampleWithDist  |     | √    |     |     | √      |
 | FusedBiasLeakyrelu           |     | √    |     |     | √      |
 | GatherPoints                 |     | √    |     |     | √      |
 | GroupPoints                  |     | √    |     |     |        |
@@ -33,7 +33,7 @@ MMCV 提供了检测、分割等任务中常用的算子
 | MergeCells                   |     | √    |     |     |        |
 | MinAreaPolygon               |     | √    |     |     |        |
 | ModulatedDeformConv2d        | √   | √    | √   |     | √      |
-| MultiScaleDeformableAttn     |     | √    | √   |     |        |
+| MultiScaleDeformableAttn     |     | √    | √   |     | √      |
 | NMS                          | √   | √    | √   |     | √      |
 | NMSRotated                   | √   | √    | √   |     | √      |
 | NMSQuadri                    | √   | √    |     |     |        |
@@ -41,10 +41,10 @@ MMCV 提供了检测、分割等任务中常用的算子
 | PointsInBoxes                | √   | √    |     |     |        |
 | PointsInPolygons             |     | √    |     |     |        |
 | PSAMask                      | √   | √    | √   |     | √      |
-| RotatedFeatureAlign          | √   | √    | √   |     |        |
+| RotatedFeatureAlign          | √   | √    | √   |     | √      |
 | RoIPointPool3d               |     | √    | √   |     |        |
 | RoIPool                      |     | √    | √   |     | √      |
-| RoIAlignRotated              | √   | √    | √   |     |        |
+| RoIAlignRotated              | √   | √    | √   |     | √      |
 | RiRoIAlignRotated            |     | √    |     |     |        |
 | RoIAlign                     | √   | √    | √   |     | √      |
 | RoIAwarePool3d               |     | √    | √   |     |        |
