@@ -435,6 +435,7 @@ class MultiheadAttention(BaseModule):
                  dropout_layer=dict(type='Dropout', drop_prob=0.),
                  init_cfg=None,
                  batch_first=False,
+                 layer_scale_init_value: float = None,
                  **kwargs):
         super().__init__(init_cfg)
         if 'dropout' in kwargs:
@@ -456,6 +457,11 @@ class MultiheadAttention(BaseModule):
         self.proj_drop = nn.Dropout(proj_drop)
         self.dropout_layer = build_dropout(
             dropout_layer) if dropout_layer else nn.Identity()
+
+        if layer_scale_init_value > 0:
+            self.gamma2 = LayerScale(embed_dims, scale=layer_scale_init_value)
+        else:
+            self.gamma2 = nn.Identity()
 
     @deprecated_api_warning({'residual': 'identity'},
                             cls_name='MultiheadAttention')
@@ -548,8 +554,7 @@ class MultiheadAttention(BaseModule):
 
         if self.batch_first:
             out = out.transpose(0, 1)
-
-        return identity + self.dropout_layer(self.proj_drop(out))
+        return identity + self.dropout_layer(self.gamma2(self.proj_drop(out)))
 
 
 @MODELS.register_module()
