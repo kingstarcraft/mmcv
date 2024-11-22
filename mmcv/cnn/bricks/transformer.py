@@ -435,7 +435,7 @@ class MultiheadAttention(BaseModule):
                  dropout_layer=dict(type='Dropout', drop_prob=0.),
                  init_cfg=None,
                  batch_first=False,
-                 layer_scale_init_value: float = None,
+                 layer_scale_init_value=0.,
                  **kwargs):
         super().__init__(init_cfg)
         if 'dropout' in kwargs:
